@@ -17,9 +17,19 @@ class ArticleItem(ListItem):
     """A list item for an article."""
     
     def __init__(self, article: Article):
+        # Choose emoji based on source
+        if article.source == "MyClaw Newsletter":
+            emoji = "🦞"
+        elif article.source == "OpenAI":
+            emoji = "🤖"
+        elif article.source == "Hacker News":
+            emoji = "🔶"
+        else:
+            emoji = "📰"
+        
         # Truncate title to prevent wrapping
         title = article.title[:55] + "..." if len(article.title) > 55 else article.title
-        label = Label(f"🐸 {title}")
+        label = Label(f"{emoji} {title}")
         super().__init__(label)
         self.article = article
 
@@ -45,7 +55,7 @@ class ArticleDetail(Static):
 class ToadmanApp(App):
     """Toadman TUI application."""
     
-    TITLE = "🐸 Toad"
+    TITLE = "🐸 Toadman"
     
     CSS = """
     Screen {
