@@ -4,11 +4,12 @@ from textual.widgets import Header, Footer, Static, ListView, ListItem, Label, L
 from textual.binding import Binding
 from textual.reactive import reactive
 from textual.message import Message
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from toadman.models import Article
 from toadman.fetchers.rss_fetcher import fetch_rss_feeds
 from toadman.fetchers.hn_fetcher import fetch_hn_articles
+from toadman.summarizer.kiro_summarizer import summarize_article
 
 class CategoryItem(Static):
     """A clickable category item."""
@@ -115,11 +116,13 @@ class ToadmanApp(App):
         Binding("j", "cursor_down", "Down", show=False),
         Binding("k", "cursor_up", "Up", show=False),
         Binding("r", "refresh", "Refresh"),
+        Binding("s", "summarize", "Summarize"),
         ("?", "help", "Help"),
     ]
     
     articles: reactive[List[Article]] = reactive(list)
     current_category: reactive[str] = reactive("All")
+    selected_article: Optional[Article] = None
     
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -191,6 +194,7 @@ class ToadmanApp(App):
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle article selection."""
         if isinstance(event.item, ArticleItem):
+            self.selected_article = event.item.article
             detail = self.query_one("#article-detail", ArticleDetail)
             detail.show_article(event.item.article)
     
@@ -211,7 +215,38 @@ class ToadmanApp(App):
     
     def action_help(self) -> None:
         """Show help screen."""
-        self.notify("Help: ↑↓/jk=Navigate, Enter=Select, r=Refresh, q=Quit")
+        self.notify("Help: ↑↓/jk=Navigate, Enter=Select, s=Summarize, r=Refresh, q=Quit")
+    
+    def action_summarize(self) -> None:
+        """Summarize the selected article using Kiro."""
+        if not self.selected_article:
+            self.notify("Please select an article first", severity="warning")
+            return
+        
+        detail = self.query_one("#article-detail", ArticleDetail)
+        
+        # Show loading state
+        detail.update("[bold]Summarizing with Kiro...[/bold]\n\n⏳ Please wait...")
+        self.notify("Generating summary with Kiro CLI...")
+        
+        # Generate summary
+        summary = summarize_article(self.selected_article)
+        
+        # Update detail view with summary
+        content = f"""[bold]{self.selected_article.title}[/bold]
+
+[dim]Source:[/dim] {self.selected_article.source}
+[dim]Published:[/dim] {self.selected_article.published_date or 'Unknown'}
+[dim]URL:[/dim] {self.selected_article.url}
+
+[bold cyan]AI Summary:[/bold cyan]
+{summary}
+
+[dim]Original Content:[/dim]
+{self.selected_article.content_snippet}
+"""
+        detail.update(content)
+        self.notify("Summary generated!")
 
 if __name__ == "__main__":
     app = ToadmanApp()
