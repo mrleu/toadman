@@ -5,3 +5,8 @@ node_modules/
 dist/
 build/
 .kiro/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
