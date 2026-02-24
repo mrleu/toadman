@@ -13,25 +13,6 @@ from toadman.summarizer.kiro_summarizer import summarize_article
 from toadman.export.markdown_exporter import export_to_markdown
 from toadman.cache import load_cache, save_cache, clear_cache
 
-class CategoryItem(Static):
-    """A clickable category item."""
-    
-    class CategorySelected(Message):
-        def __init__(self, category: str):
-            super().__init__()
-            self.category = category
-    
-    def __init__(self, category_name: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.category_name = category_name
-        self.selected = False
-    
-    def on_mount(self) -> None:
-        self.update(f"  {self.category_name}")
-    
-    def on_click(self) -> None:
-        self.post_message(self.CategorySelected(self.category_name))
-
 class ArticleItem(ListItem):
     """A list item for an article."""
     
@@ -67,15 +48,8 @@ class ToadmanApp(App):
     CSS = """
     Screen {
         layout: grid;
-        grid-size: 5 10;
-        grid-columns: 1fr 2fr 2fr;
-    }
-    
-    #sidebar {
-        column-span: 1;
-        row-span: 9;
-        background: $panel;
-        border-right: solid $primary;
+        grid-size: 4 10;
+        grid-columns: 2fr 2fr;
     }
     
     #article-list-container {
@@ -91,20 +65,11 @@ class ToadmanApp(App):
     }
     
     Header {
-        column-span: 5;
+        column-span: 4;
     }
     
     Footer {
-        column-span: 5;
-    }
-    
-    .category-item {
-        padding: 1;
-        margin: 0 1;
-    }
-    
-    .category-item:hover {
-        background: $accent;
+        column-span: 4;
     }
     
     ArticleDetail {
@@ -128,7 +93,6 @@ class ToadmanApp(App):
     ]
     
     articles: reactive[List[Article]] = reactive(list)
-    current_category: reactive[str] = reactive("All")
     selected_article: Optional[Article] = None
     summaries: Dict[str, str] = {}
     search_query: str = ""
@@ -136,15 +100,6 @@ class ToadmanApp(App):
     def compose(self) -> ComposeResult:
         """Create child widgets."""
         yield Header()
-        
-        with Vertical(id="sidebar"):
-            yield Label("📂 Categories", classes="category-item")
-            yield CategoryItem("All", classes="category-item")
-            yield CategoryItem("Claude Code", classes="category-item")
-            yield CategoryItem("Codex", classes="category-item")
-            yield CategoryItem("Agentic Tools", classes="category-item")
-            yield CategoryItem("OpenClaw", classes="category-item")
-            yield CategoryItem("Hacker News", classes="category-item")
         
         with VerticalScroll(id="article-list-container"):
             yield LoadingIndicator(id="loading")
@@ -206,13 +161,11 @@ class ToadmanApp(App):
         self.query_one("#loading", LoadingIndicator).display = False
     
     def update_article_list(self) -> None:
-        """Update the article list based on current category and search."""
+        """Update the article list based on search."""
         article_list = self.query_one("#article-list", ListView)
         article_list.clear()
         
         filtered = self.articles
-        if self.current_category != "All":
-            filtered = [a for a in self.articles if a.category == self.current_category]
         
         # Apply search filter
         if self.search_query:
@@ -222,12 +175,6 @@ class ToadmanApp(App):
         for article in filtered:
             item = ArticleItem(article)
             article_list.append(item)
-    
-    def on_category_item_category_selected(self, message: CategoryItem.CategorySelected) -> None:
-        """Handle category selection."""
-        self.current_category = message.category
-        self.update_article_list()
-        self.notify(f"Showing: {message.category}")
     
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
         """Handle article highlight (navigation)."""
@@ -274,9 +221,6 @@ class ToadmanApp(App):
   /             Search articles
   ?             Show this help
   q             Jack out (Quit)
-
-[bold]Categories:[/bold]
-  Click on categories in the sidebar to filter articles
 
 [bold]Configuration:[/bold]
   Edit ~/.toadman/config.toml to customize RSS feeds
@@ -335,15 +279,10 @@ class ToadmanApp(App):
         
         self.notify("🐸 Exporting Battle Chip data...")
         
-        # Get filtered articles based on current category
-        filtered = self.articles
-        if self.current_category != "All":
-            filtered = [a for a in self.articles if a.category == self.current_category]
+        # Export all articles
+        filepath = export_to_markdown(self.articles, self.summaries)
         
-        # Export to markdown
-        filepath = export_to_markdown(filtered, self.summaries)
-        
-        self.notify(f"🐸 {len(filtered)} articles exported! Ribbit!")
+        self.notify(f"🐸 {len(self.articles)} articles exported! Ribbit!")
 
 if __name__ == "__main__":
     app = ToadmanApp()
