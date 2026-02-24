@@ -174,9 +174,24 @@ class ToadmanApp(App):
             query_lower = self.search_query.lower()
             filtered = [a for a in filtered if query_lower in a.title.lower() or query_lower in a.source.lower()]
         
+        # Group by source
+        sources = {}
         for article in filtered:
-            item = ArticleItem(article)
-            article_list.append(item)
+            if article.source not in sources:
+                sources[article.source] = []
+            sources[article.source].append(article)
+        
+        # Add articles grouped by source with headers
+        for source, articles in sources.items():
+            # Add source header
+            header = ListItem(Label(f"[bold cyan]━━━ {source} ━━━[/bold cyan]"))
+            header.disabled = True
+            article_list.append(header)
+            
+            # Add articles for this source
+            for article in articles:
+                item = ArticleItem(article)
+                article_list.append(item)
     
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
         """Handle article highlight (navigation)."""
