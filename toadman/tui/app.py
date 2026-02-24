@@ -5,6 +5,7 @@ from textual.binding import Binding
 from textual.reactive import reactive
 from textual.message import Message
 from typing import List
+from datetime import datetime
 from toadman.models import Article
 from toadman.fetchers.rss_fetcher import fetch_rss_feeds
 from toadman.fetchers.hn_fetcher import fetch_hn_articles
@@ -155,7 +156,11 @@ class ToadmanApp(App):
         hn_articles = fetch_hn_articles()
         
         self.articles = rss_articles + hn_articles
-        self.articles.sort(key=lambda a: a.published_date or "", reverse=True)
+        # Sort by published date, handling None and timezone-aware/naive datetimes
+        self.articles.sort(
+            key=lambda a: a.published_date.replace(tzinfo=None) if a.published_date else datetime.min,
+            reverse=True
+        )
         
         self.update_article_list()
         self.notify(f"Loaded {len(self.articles)} articles")
