@@ -24,14 +24,16 @@ class ArticleItem(ListItem):
             emoji = "🤖"
         elif article.source == "Hacker News":
             emoji = "🔶"
+        elif article.source == "The Neuron":
+            emoji = "🧠"
         else:
             emoji = "📰"
         
         # Truncate title to prevent wrapping
         title = article.title[:55] + "..." if len(article.title) > 55 else article.title
         
-        # Don't add emoji if title already starts with an emoji
-        if title and title[0] in ['🦞', '🤖', '🔶', '📰', '🐸']:
+        # Don't add emoji if title already starts with an emoji (check if first char is emoji)
+        if title and ord(title[0]) > 127:  # Simple emoji detection
             label = Label(title)
         else:
             label = Label(f"{emoji} {title}")
