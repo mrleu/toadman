@@ -36,7 +36,7 @@ class ArticleItem(ListItem):
     """A list item for an article."""
     
     def __init__(self, article: Article):
-        label = Label(f"📰 {article.title[:60]}...")
+        label = Label(f"🐸 {article.title[:60]}...")
         super().__init__(label)
         self.article = article
 
@@ -168,13 +168,16 @@ class ToadmanApp(App):
                 key=lambda a: a.published_date.replace(tzinfo=None) if a.published_date else datetime.min,
                 reverse=True
             )
+            # Filter to today's articles only
+            today = datetime.now().date()
+            self.articles = [a for a in self.articles if a.published_date and a.published_date.date() == today]
             self.update_article_list()
-            self.notify(f"Loaded {len(self.articles)} articles from cache")
+            self.notify(f"🐸 Ribbit! Loaded {len(self.articles)} articles from cache")
             self.query_one("#loading", LoadingIndicator).display = False
             return
         
         # Fetch fresh data if no cache
-        self.notify("Fetching articles...")
+        self.notify("🐸 Toadman.EXE executing! Fetching today's news...")
         
         # Fetch from RSS and HN
         rss_articles = fetch_rss_feeds()
@@ -187,11 +190,15 @@ class ToadmanApp(App):
             reverse=True
         )
         
+        # Filter to today's articles only
+        today = datetime.now().date()
+        self.articles = [a for a in self.articles if a.published_date and a.published_date.date() == today]
+        
         # Save to cache
         save_cache(self.articles)
         
         self.update_article_list()
-        self.notify(f"Loaded {len(self.articles)} articles")
+        self.notify(f"🐸 Jack in complete! {len(self.articles)} articles retrieved")
         
         # Hide loading indicator
         self.query_one("#loading", LoadingIndicator).display = False
@@ -245,29 +252,29 @@ class ToadmanApp(App):
     
     def action_help(self) -> None:
         """Show help screen."""
-        help_text = """[bold cyan]Toadman - Agentic News CLI[/bold cyan]
+        help_text = """[bold cyan]🐸 Toadman.EXE - Agentic News Battle Chip![/bold cyan]
 
 [bold]Navigation:[/bold]
-  ↑/↓ or j/k    Navigate articles
+  ↑/↓ or j/k    Navigate articles (Ribbit!)
   Enter         Select article to view details
   
-[bold]Actions:[/bold]
-  s             Summarize selected article with Kiro
+[bold]Battle Chip Actions:[/bold]
+  s             Summon Kiro for AI summary
   e             Export articles to markdown
-  r             Refresh articles (clear cache)
+  r             Refresh today's news (clear cache)
   /             Search articles
   ?             Show this help
-  q             Quit
+  q             Jack out (Quit)
 
 [bold]Categories:[/bold]
   Click on categories in the sidebar to filter articles
 
 [bold]Configuration:[/bold]
-  Edit ~/.toadman/config.toml to customize RSS feeds and settings
+  Edit ~/.toadman/config.toml to customize RSS feeds
 
 [bold]Cache:[/bold]
-  Articles are cached for 1 hour in ~/.toadman/cache/
-  Use --refresh flag or press 'r' to force refresh
+  Articles cached for 1 hour in ~/.toadman/cache/
+  Only today's articles are shown! 🐸
 """
         self.notify(help_text, timeout=10)
     
@@ -280,14 +287,14 @@ class ToadmanApp(App):
     def action_summarize(self) -> None:
         """Summarize the selected article using Kiro."""
         if not self.selected_article:
-            self.notify("Please select an article first", severity="warning")
+            self.notify("🐸 Ribbit! Select an article first", severity="warning")
             return
         
         detail = self.query_one("#article-detail", ArticleDetail)
         
         # Show loading state
-        detail.update("[bold]Summarizing with Kiro...[/bold]\n\n⏳ Please wait...")
-        self.notify("Generating summary with Kiro CLI...")
+        detail.update("[bold]🐸 Toadman.EXE summoning Kiro...[/bold]\n\n⏳ Battle Chip loading...")
+        self.notify("🐸 Activating Battle Chip: Kiro Summarizer!")
         
         # Generate summary
         summary = summarize_article(self.selected_article)
@@ -302,22 +309,22 @@ class ToadmanApp(App):
 [dim]Published:[/dim] {self.selected_article.published_date or 'Unknown'}
 [dim]URL:[/dim] {self.selected_article.url}
 
-[bold cyan]AI Summary:[/bold cyan]
+[bold cyan]🐸 Kiro Battle Chip Summary:[/bold cyan]
 {summary}
 
 [dim]Original Content:[/dim]
 {self.selected_article.content_snippet}
 """
         detail.update(content)
-        self.notify("Summary generated!")
+        self.notify("🐸 Battle Chip complete! Ribbit!")
     
     def action_export(self) -> None:
         """Export articles to markdown."""
         if not self.articles:
-            self.notify("No articles to export", severity="warning")
+            self.notify("🐸 No articles to export! Ribbit...", severity="warning")
             return
         
-        self.notify("Exporting articles to markdown...")
+        self.notify("🐸 Exporting Battle Chip data...")
         
         # Get filtered articles based on current category
         filtered = self.articles
@@ -327,7 +334,7 @@ class ToadmanApp(App):
         # Export to markdown
         filepath = export_to_markdown(filtered, self.summaries)
         
-        self.notify(f"Exported {len(filtered)} articles to {filepath.name}")
+        self.notify(f"🐸 {len(filtered)} articles exported! Ribbit!")
 
 if __name__ == "__main__":
     app = ToadmanApp()
