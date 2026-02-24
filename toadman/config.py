@@ -8,6 +8,7 @@ DEFAULT_CONFIG = {
     "rss_feeds": {
         "OpenAI": "https://openai.com/blog/rss.xml",
         "MyClaw Newsletter": "https://newsletter.myclaw.ai/rss/",
+        "The Neuron": "https://rss.beehiiv.com/feeds/N4eCstxvgX.xml",
     },
     "hacker_news": {
         "keywords": ["agentic", "Claude Code", "Codex", "OpenClaw"],
