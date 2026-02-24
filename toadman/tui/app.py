@@ -4,12 +4,13 @@ from textual.widgets import Header, Footer, Static, ListView, ListItem, Label, L
 from textual.binding import Binding
 from textual.reactive import reactive
 from textual.message import Message
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 from toadman.models import Article
 from toadman.fetchers.rss_fetcher import fetch_rss_feeds
 from toadman.fetchers.hn_fetcher import fetch_hn_articles
 from toadman.summarizer.kiro_summarizer import summarize_article
+from toadman.export.markdown_exporter import export_to_markdown
 
 class CategoryItem(Static):
     """A clickable category item."""
@@ -117,12 +118,14 @@ class ToadmanApp(App):
         Binding("k", "cursor_up", "Up", show=False),
         Binding("r", "refresh", "Refresh"),
         Binding("s", "summarize", "Summarize"),
+        Binding("e", "export", "Export"),
         ("?", "help", "Help"),
     ]
     
     articles: reactive[List[Article]] = reactive(list)
     current_category: reactive[str] = reactive("All")
     selected_article: Optional[Article] = None
+    summaries: Dict[str, str] = {}
     
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -215,7 +218,7 @@ class ToadmanApp(App):
     
     def action_help(self) -> None:
         """Show help screen."""
-        self.notify("Help: ↑↓/jk=Navigate, Enter=Select, s=Summarize, r=Refresh, q=Quit")
+        self.notify("Help: ↑↓/jk=Navigate, Enter=Select, s=Summarize, e=Export, r=Refresh, q=Quit")
     
     def action_summarize(self) -> None:
         """Summarize the selected article using Kiro."""
@@ -232,6 +235,9 @@ class ToadmanApp(App):
         # Generate summary
         summary = summarize_article(self.selected_article)
         
+        # Store summary
+        self.summaries[self.selected_article.url] = summary
+        
         # Update detail view with summary
         content = f"""[bold]{self.selected_article.title}[/bold]
 
@@ -247,6 +253,24 @@ class ToadmanApp(App):
 """
         detail.update(content)
         self.notify("Summary generated!")
+    
+    def action_export(self) -> None:
+        """Export articles to markdown."""
+        if not self.articles:
+            self.notify("No articles to export", severity="warning")
+            return
+        
+        self.notify("Exporting articles to markdown...")
+        
+        # Get filtered articles based on current category
+        filtered = self.articles
+        if self.current_category != "All":
+            filtered = [a for a in self.articles if a.category == self.current_category]
+        
+        # Export to markdown
+        filepath = export_to_markdown(filtered, self.summaries)
+        
+        self.notify(f"Exported {len(filtered)} articles to {filepath.name}")
 
 if __name__ == "__main__":
     app = ToadmanApp()
