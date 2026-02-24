@@ -2,13 +2,14 @@ import httpx
 from datetime import datetime
 from typing import List
 from toadman.models import Article
+from toadman.config import get_hn_keywords
 
 HN_SEARCH_API = "https://hn.algolia.com/api/v1/search"
-KEYWORDS = ["agentic", "Claude Code", "Codex", "OpenClaw"]
 
 def fetch_hn_articles() -> List[Article]:
     """Fetch articles from Hacker News using Algolia search API."""
     articles = []
+    KEYWORDS = get_hn_keywords()
     
     for keyword in KEYWORDS:
         try:

@@ -2,17 +2,12 @@ import feedparser
 from datetime import datetime
 from typing import List
 from toadman.models import Article
-
-RSS_FEEDS = {
-    "Anthropic": "https://www.anthropic.com/news/rss.xml",
-    "OpenAI": "https://openai.com/blog/rss.xml",
-    "Claude Log": "https://claudelog.com/feed.xml",
-    "OpenClaw": "https://openclaw-ai.dev/feed.xml",
-}
+from toadman.config import get_rss_feeds
 
 def fetch_rss_feeds() -> List[Article]:
     """Fetch articles from all configured RSS feeds."""
     articles = []
+    RSS_FEEDS = get_rss_feeds()
     
     for source, url in RSS_FEEDS.items():
         try:

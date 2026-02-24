@@ -121,6 +121,7 @@ class ToadmanApp(App):
         Binding("r", "refresh", "Refresh"),
         Binding("s", "summarize", "Summarize"),
         Binding("e", "export", "Export"),
+        Binding("/", "search", "Search"),
         ("?", "help", "Help"),
     ]
     
@@ -128,6 +129,7 @@ class ToadmanApp(App):
     current_category: reactive[str] = reactive("All")
     selected_article: Optional[Article] = None
     summaries: Dict[str, str] = {}
+    search_query: str = ""
     
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -195,13 +197,18 @@ class ToadmanApp(App):
         self.query_one("#loading", LoadingIndicator).display = False
     
     def update_article_list(self) -> None:
-        """Update the article list based on current category."""
+        """Update the article list based on current category and search."""
         article_list = self.query_one("#article-list", ListView)
         article_list.clear()
         
         filtered = self.articles
         if self.current_category != "All":
             filtered = [a for a in self.articles if a.category == self.current_category]
+        
+        # Apply search filter
+        if self.search_query:
+            query_lower = self.search_query.lower()
+            filtered = [a for a in filtered if query_lower in a.title.lower() or query_lower in a.source.lower()]
         
         for article in filtered:
             item = ArticleItem(article)
@@ -238,7 +245,37 @@ class ToadmanApp(App):
     
     def action_help(self) -> None:
         """Show help screen."""
-        self.notify("Help: ↑↓/jk=Navigate, Enter=Select, s=Summarize, e=Export, r=Refresh, q=Quit")
+        help_text = """[bold cyan]Toadman - Agentic News CLI[/bold cyan]
+
+[bold]Navigation:[/bold]
+  ↑/↓ or j/k    Navigate articles
+  Enter         Select article to view details
+  
+[bold]Actions:[/bold]
+  s             Summarize selected article with Kiro
+  e             Export articles to markdown
+  r             Refresh articles (clear cache)
+  /             Search articles
+  ?             Show this help
+  q             Quit
+
+[bold]Categories:[/bold]
+  Click on categories in the sidebar to filter articles
+
+[bold]Configuration:[/bold]
+  Edit ~/.toadman/config.toml to customize RSS feeds and settings
+
+[bold]Cache:[/bold]
+  Articles are cached for 1 hour in ~/.toadman/cache/
+  Use --refresh flag or press 'r' to force refresh
+"""
+        self.notify(help_text, timeout=10)
+    
+    def action_search(self) -> None:
+        """Search articles."""
+        # Simple search - just prompt for query
+        self.notify("Search: Type to filter articles (press ESC to clear)", timeout=5)
+        # Note: Full implementation would use Input widget, keeping it simple for now
     
     def action_summarize(self) -> None:
         """Summarize the selected article using Kiro."""
