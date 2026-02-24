@@ -5,7 +5,7 @@ from textual.binding import Binding
 from textual.reactive import reactive
 from textual.message import Message
 from typing import List, Optional, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 from toadman.models import Article
 from toadman.fetchers.rss_fetcher import fetch_rss_feeds
 from toadman.fetchers.hn_fetcher import fetch_hn_articles
@@ -125,16 +125,16 @@ class ToadmanApp(App):
                 key=lambda a: a.published_date.replace(tzinfo=None) if a.published_date else datetime.min,
                 reverse=True
             )
-            # Filter to today's articles only
-            today = datetime.now().date()
-            self.articles = [a for a in self.articles if a.published_date and a.published_date.date() == today]
+            # Filter to last 7 days
+            seven_days_ago = datetime.now().date() - timedelta(days=7)
+            self.articles = [a for a in self.articles if a.published_date and a.published_date.date() >= seven_days_ago]
             self.update_article_list()
             self.notify(f"🐸 Ribbit! Loaded {len(self.articles)} articles from cache")
             self.query_one("#loading", LoadingIndicator).display = False
             return
         
         # Fetch fresh data if no cache
-        self.notify("🐸 Toadman.EXE executing! Fetching today's news...")
+        self.notify("🐸 Toadman.EXE executing! Fetching news...")
         
         # Fetch from RSS and HN
         rss_articles = fetch_rss_feeds()
@@ -147,9 +147,9 @@ class ToadmanApp(App):
             reverse=True
         )
         
-        # Filter to today's articles only
-        today = datetime.now().date()
-        self.articles = [a for a in self.articles if a.published_date and a.published_date.date() == today]
+        # Filter to last 7 days
+        seven_days_ago = datetime.now().date() - timedelta(days=7)
+        self.articles = [a for a in self.articles if a.published_date and a.published_date.date() >= seven_days_ago]
         
         # Save to cache
         save_cache(self.articles)
@@ -227,7 +227,7 @@ class ToadmanApp(App):
 
 [bold]Cache:[/bold]
   Articles cached for 1 hour in ~/.toadman/cache/
-  Only today's articles are shown! 🐸
+  Shows articles from the last 7 days! 🐸
 """
         self.notify(help_text, timeout=10)
     
