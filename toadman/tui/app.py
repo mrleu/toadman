@@ -36,7 +36,7 @@ class ArticleDetail(Static):
 
 [dim]Source:[/dim] {article.source}
 [dim]Published:[/dim] {article.published_date or 'Unknown'}
-[dim]URL:[/dim] {article.url}
+[dim]URL:[/dim] [link={article.url}]{article.url}[/link]
 
 {article.content_snippet}
 """
@@ -44,6 +44,8 @@ class ArticleDetail(Static):
 
 class ToadmanApp(App):
     """Toadman TUI application."""
+    
+    TITLE = "🐸 Toad"
     
     CSS = """
     Screen {
@@ -260,7 +262,7 @@ class ToadmanApp(App):
 
 [dim]Source:[/dim] {self.selected_article.source}
 [dim]Published:[/dim] {self.selected_article.published_date or 'Unknown'}
-[dim]URL:[/dim] {self.selected_article.url}
+[dim]URL:[/dim] [link={self.selected_article.url}]{self.selected_article.url}[/link]
 
 [bold cyan]🐸 Kiro Battle Chip Summary:[/bold cyan]
 {summary}
