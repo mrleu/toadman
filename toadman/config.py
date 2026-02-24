@@ -6,10 +6,7 @@ CONFIG_FILE = Path.home() / ".toadman" / "config.toml"
 
 DEFAULT_CONFIG = {
     "rss_feeds": {
-        "Anthropic": "https://www.anthropic.com/news/rss.xml",
         "OpenAI": "https://openai.com/blog/rss.xml",
-        "Claude Log": "https://claudelog.com/feed.xml",
-        "OpenClaw": "https://openclaw-ai.dev/feed.xml",
     },
     "hacker_news": {
         "keywords": ["agentic", "Claude Code", "Codex", "OpenClaw"],
