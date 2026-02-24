@@ -229,6 +229,13 @@ class ToadmanApp(App):
         self.update_article_list()
         self.notify(f"Showing: {message.category}")
     
+    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        """Handle article highlight (navigation)."""
+        if isinstance(event.item, ArticleItem):
+            self.selected_article = event.item.article
+            detail = self.query_one("#article-detail", ArticleDetail)
+            detail.show_article(event.item.article)
+    
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle article selection."""
         if isinstance(event.item, ArticleItem):
