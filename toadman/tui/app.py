@@ -107,6 +107,7 @@ class ToadmanApp(App):
         Binding("r", "refresh", "Refresh"),
         Binding("s", "summarize", "Summarize"),
         Binding("e", "export", "Export"),
+        Binding("o", "open_url", "Open URL"),
         Binding("/", "search", "Search"),
         ("?", "help", "Help"),
     ]
@@ -249,6 +250,7 @@ class ToadmanApp(App):
   Enter         Select article to view details
   
 [bold]Battle Chip Actions:[/bold]
+  o             Open article URL in browser
   s             Summon Kiro for AI summary
   e             Export articles to markdown
   r             Refresh today's news (clear cache)
@@ -264,6 +266,16 @@ class ToadmanApp(App):
   Shows articles from the last 7 days! 🐸
 """
         self.notify(help_text, timeout=10)
+    
+    def action_open_url(self) -> None:
+        """Open the selected article URL in browser."""
+        if not self.selected_article:
+            self.notify("🐸 Ribbit! Select an article first", severity="warning")
+            return
+        
+        import webbrowser
+        webbrowser.open(self.selected_article.url)
+        self.notify(f"🐸 Opening in browser... Ribbit!")
     
     def action_search(self) -> None:
         """Search articles."""
