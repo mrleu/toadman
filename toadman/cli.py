@@ -11,7 +11,10 @@ def main():
     (toadman_dir / "cache").mkdir(parents=True, exist_ok=True)
     (toadman_dir / "exports").mkdir(parents=True, exist_ok=True)
     
-    click.echo("Toadman CLI - Coming soon!")
+    # Launch TUI
+    from toadman.tui.app import ToadmanApp
+    app = ToadmanApp()
+    app.run()
 
 if __name__ == "__main__":
     main()
