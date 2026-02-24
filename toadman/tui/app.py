@@ -29,7 +29,13 @@ class ArticleItem(ListItem):
         
         # Truncate title to prevent wrapping
         title = article.title[:55] + "..." if len(article.title) > 55 else article.title
-        label = Label(f"{emoji} {title}")
+        
+        # Don't add emoji if title already starts with an emoji
+        if title and title[0] in ['🦞', '🤖', '🔶', '📰', '🐸']:
+            label = Label(title)
+        else:
+            label = Label(f"{emoji} {title}")
+        
         super().__init__(label)
         self.article = article
 
