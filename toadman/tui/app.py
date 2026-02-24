@@ -17,16 +17,16 @@ class CategoryItem(Static):
             super().__init__()
             self.category = category
     
-    def __init__(self, name: str, *args, **kwargs):
+    def __init__(self, category_name: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.name = name
+        self.category_name = category_name
         self.selected = False
     
     def on_mount(self) -> None:
-        self.update(f"  {self.name}")
+        self.update(f"  {self.category_name}")
     
     def on_click(self) -> None:
-        self.post_message(self.CategorySelected(self.name))
+        self.post_message(self.CategorySelected(self.category_name))
 
 class ArticleItem(ListItem):
     """A list item for an article."""
