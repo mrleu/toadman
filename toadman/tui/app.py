@@ -34,8 +34,9 @@ class CategoryItem(Static):
 class ArticleItem(ListItem):
     """A list item for an article."""
     
-    def __init__(self, article: Article, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, article: Article):
+        label = Label(f"📰 {article.title[:60]}...")
+        super().__init__(label)
         self.article = article
 
 class ArticleDetail(Static):
@@ -185,7 +186,6 @@ class ToadmanApp(App):
         
         for article in filtered:
             item = ArticleItem(article)
-            item.append(Label(f"📰 {article.title[:60]}..."))
             article_list.append(item)
     
     def on_category_item_category_selected(self, message: CategoryItem.CategorySelected) -> None:
