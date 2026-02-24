@@ -48,15 +48,12 @@ class ArticleDetail(Static):
     
     def show_article(self, article: Article):
         self.article = article
-        # Escape the URL for markup
-        from rich.markup import escape
-        escaped_url = escape(article.url)
-        
+        # Don't use link markup, just show the URL as plain text
         content = f"""[bold]{article.title}[/bold]
 
 [dim]Source:[/dim] {article.source}
 [dim]Published:[/dim] {article.published_date or 'Unknown'}
-[dim]URL:[/dim] [link={article.url}]{escaped_url}[/link]
+[dim]URL:[/dim] {article.url}
 
 {article.content_snippet}
 """
@@ -293,14 +290,11 @@ class ToadmanApp(App):
         self.summaries[self.selected_article.url] = summary
         
         # Update detail view with summary
-        from rich.markup import escape
-        escaped_url = escape(self.selected_article.url)
-        
         content = f"""[bold]{self.selected_article.title}[/bold]
 
 [dim]Source:[/dim] {self.selected_article.source}
 [dim]Published:[/dim] {self.selected_article.published_date or 'Unknown'}
-[dim]URL:[/dim] [link={self.selected_article.url}]{escaped_url}[/link]
+[dim]URL:[/dim] {self.selected_article.url}
 
 [bold cyan]🐸 Kiro Battle Chip Summary:[/bold cyan]
 {summary}
