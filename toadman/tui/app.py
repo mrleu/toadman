@@ -1,11 +1,58 @@
 from textual.app import App, ComposeResult
-from textual.containers import Container, Vertical, Horizontal
-from textual.widgets import Header, Footer, Static, ListView, ListItem, Label
+from textual.containers import Container, Vertical, Horizontal, VerticalScroll
+from textual.widgets import Header, Footer, Static, ListView, ListItem, Label, LoadingIndicator
 from textual.binding import Binding
+from textual.reactive import reactive
+from textual.message import Message
+from typing import List
+from toadman.models import Article
+from toadman.fetchers.rss_fetcher import fetch_rss_feeds
+from toadman.fetchers.hn_fetcher import fetch_hn_articles
 
-class ArticleList(ListView):
-    """Custom article list widget."""
-    pass
+class CategoryItem(Static):
+    """A clickable category item."""
+    
+    class CategorySelected(Message):
+        def __init__(self, category: str):
+            super().__init__()
+            self.category = category
+    
+    def __init__(self, name: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = name
+        self.selected = False
+    
+    def on_mount(self) -> None:
+        self.update(f"  {self.name}")
+    
+    def on_click(self) -> None:
+        self.post_message(self.CategorySelected(self.name))
+
+class ArticleItem(ListItem):
+    """A list item for an article."""
+    
+    def __init__(self, article: Article, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.article = article
+
+class ArticleDetail(Static):
+    """Article detail view."""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.article = None
+    
+    def show_article(self, article: Article):
+        self.article = article
+        content = f"""[bold]{article.title}[/bold]
+
+[dim]Source:[/dim] {article.source}
+[dim]Published:[/dim] {article.published_date or 'Unknown'}
+[dim]URL:[/dim] {article.url}
+
+{article.content_snippet}
+"""
+        self.update(content)
 
 class ToadmanApp(App):
     """Toadman TUI application."""
@@ -13,8 +60,8 @@ class ToadmanApp(App):
     CSS = """
     Screen {
         layout: grid;
-        grid-size: 4 10;
-        grid-columns: 1fr 3fr;
+        grid-size: 5 10;
+        grid-columns: 1fr 2fr 2fr;
     }
     
     #sidebar {
@@ -24,17 +71,24 @@ class ToadmanApp(App):
         border-right: solid $primary;
     }
     
-    #main {
-        column-span: 3;
+    #article-list-container {
+        column-span: 2;
         row-span: 9;
+        border-right: solid $primary;
+    }
+    
+    #detail-container {
+        column-span: 2;
+        row-span: 9;
+        padding: 1;
     }
     
     Header {
-        column-span: 4;
+        column-span: 5;
     }
     
     Footer {
-        column-span: 4;
+        column-span: 5;
     }
     
     .category-item {
@@ -45,14 +99,26 @@ class ToadmanApp(App):
     .category-item:hover {
         background: $accent;
     }
+    
+    ArticleDetail {
+        height: 100%;
+    }
+    
+    #loading {
+        align: center middle;
+    }
     """
     
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("j", "cursor_down", "Down", show=False),
         Binding("k", "cursor_up", "Up", show=False),
+        Binding("r", "refresh", "Refresh"),
         ("?", "help", "Help"),
     ]
+    
+    articles: reactive[List[Article]] = reactive(list)
+    current_category: reactive[str] = reactive("All")
     
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -60,36 +126,87 @@ class ToadmanApp(App):
         
         with Vertical(id="sidebar"):
             yield Label("📂 Categories", classes="category-item")
-            yield Label("  Claude Code", classes="category-item")
-            yield Label("  Codex", classes="category-item")
-            yield Label("  Agentic Tools", classes="category-item")
-            yield Label("  OpenClaw", classes="category-item")
-            yield Label("  Hacker News", classes="category-item")
+            yield CategoryItem("All", classes="category-item")
+            yield CategoryItem("Claude Code", classes="category-item")
+            yield CategoryItem("Codex", classes="category-item")
+            yield CategoryItem("Agentic Tools", classes="category-item")
+            yield CategoryItem("OpenClaw", classes="category-item")
+            yield CategoryItem("Hacker News", classes="category-item")
         
-        with Vertical(id="main"):
-            yield ArticleList(
-                ListItem(Label("📰 Sample Article 1")),
-                ListItem(Label("📰 Sample Article 2")),
-                ListItem(Label("📰 Sample Article 3")),
-                ListItem(Label("📰 Sample Article 4")),
-                ListItem(Label("📰 Sample Article 5")),
-            )
+        with VerticalScroll(id="article-list-container"):
+            yield LoadingIndicator(id="loading")
+            yield ListView(id="article-list")
+        
+        with VerticalScroll(id="detail-container"):
+            yield ArticleDetail(id="article-detail")
         
         yield Footer()
     
+    def on_mount(self) -> None:
+        """Load articles on startup."""
+        self.load_articles()
+    
+    def load_articles(self) -> None:
+        """Fetch articles from all sources."""
+        self.notify("Fetching articles...")
+        
+        # Fetch from RSS and HN
+        rss_articles = fetch_rss_feeds()
+        hn_articles = fetch_hn_articles()
+        
+        self.articles = rss_articles + hn_articles
+        self.articles.sort(key=lambda a: a.published_date or "", reverse=True)
+        
+        self.update_article_list()
+        self.notify(f"Loaded {len(self.articles)} articles")
+        
+        # Hide loading indicator
+        self.query_one("#loading", LoadingIndicator).display = False
+    
+    def update_article_list(self) -> None:
+        """Update the article list based on current category."""
+        article_list = self.query_one("#article-list", ListView)
+        article_list.clear()
+        
+        filtered = self.articles
+        if self.current_category != "All":
+            filtered = [a for a in self.articles if a.category == self.current_category]
+        
+        for article in filtered:
+            item = ArticleItem(article)
+            item.append(Label(f"📰 {article.title[:60]}..."))
+            article_list.append(item)
+    
+    def on_category_item_category_selected(self, message: CategoryItem.CategorySelected) -> None:
+        """Handle category selection."""
+        self.current_category = message.category
+        self.update_article_list()
+        self.notify(f"Showing: {message.category}")
+    
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle article selection."""
+        if isinstance(event.item, ArticleItem):
+            detail = self.query_one("#article-detail", ArticleDetail)
+            detail.show_article(event.item.article)
+    
     def action_cursor_down(self) -> None:
         """Move cursor down (vim-style)."""
-        article_list = self.query_one(ArticleList)
+        article_list = self.query_one("#article-list", ListView)
         article_list.action_cursor_down()
     
     def action_cursor_up(self) -> None:
         """Move cursor up (vim-style)."""
-        article_list = self.query_one(ArticleList)
+        article_list = self.query_one("#article-list", ListView)
         article_list.action_cursor_up()
+    
+    def action_refresh(self) -> None:
+        """Refresh articles."""
+        self.query_one("#loading", LoadingIndicator).display = True
+        self.load_articles()
     
     def action_help(self) -> None:
         """Show help screen."""
-        self.notify("Help: ↑↓/jk=Navigate, Enter=Select, q=Quit")
+        self.notify("Help: ↑↓/jk=Navigate, Enter=Select, r=Refresh, q=Quit")
 
 if __name__ == "__main__":
     app = ToadmanApp()
