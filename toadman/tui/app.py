@@ -170,13 +170,16 @@ class ToadmanApp(App):
                 key=lambda a: a.published_date.replace(tzinfo=None) if a.published_date else datetime.min,
                 reverse=True
             )
+            # Filter to today's articles only
+            today = datetime.now().date()
+            self.articles = [a for a in self.articles if a.published_date and a.published_date.date() == today]
             self.update_article_list()
             self.notify(f"🐸 Ribbit! Loaded {len(self.articles)} articles from cache")
             self.query_one("#loading", LoadingIndicator).display = False
             return
         
         # Fetch fresh data if no cache
-        self.notify("🐸 Toadman.EXE executing! Fetching news...")
+        self.notify("🐸 Toadman.EXE executing! Fetching today's news...")
         
         # Fetch from RSS and HN
         rss_articles = fetch_rss_feeds()
@@ -188,6 +191,10 @@ class ToadmanApp(App):
             key=lambda a: a.published_date.replace(tzinfo=None) if a.published_date else datetime.min,
             reverse=True
         )
+        
+        # Filter to today's articles only
+        today = datetime.now().date()
+        self.articles = [a for a in self.articles if a.published_date and a.published_date.date() == today]
         
         # Save to cache
         save_cache(self.articles)
