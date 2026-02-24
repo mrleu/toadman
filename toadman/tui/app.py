@@ -11,6 +11,7 @@ from toadman.fetchers.rss_fetcher import fetch_rss_feeds
 from toadman.fetchers.hn_fetcher import fetch_hn_articles
 from toadman.summarizer.kiro_summarizer import summarize_article
 from toadman.export.markdown_exporter import export_to_markdown
+from toadman.cache import load_cache, save_cache, clear_cache
 
 class CategoryItem(Static):
     """A clickable category item."""
@@ -156,6 +157,21 @@ class ToadmanApp(App):
     
     def load_articles(self) -> None:
         """Fetch articles from all sources."""
+        # Try to load from cache first
+        cached_articles = load_cache()
+        
+        if cached_articles:
+            self.articles = cached_articles
+            self.articles.sort(
+                key=lambda a: a.published_date.replace(tzinfo=None) if a.published_date else datetime.min,
+                reverse=True
+            )
+            self.update_article_list()
+            self.notify(f"Loaded {len(self.articles)} articles from cache")
+            self.query_one("#loading", LoadingIndicator).display = False
+            return
+        
+        # Fetch fresh data if no cache
         self.notify("Fetching articles...")
         
         # Fetch from RSS and HN
@@ -168,6 +184,9 @@ class ToadmanApp(App):
             key=lambda a: a.published_date.replace(tzinfo=None) if a.published_date else datetime.min,
             reverse=True
         )
+        
+        # Save to cache
+        save_cache(self.articles)
         
         self.update_article_list()
         self.notify(f"Loaded {len(self.articles)} articles")
@@ -213,6 +232,7 @@ class ToadmanApp(App):
     
     def action_refresh(self) -> None:
         """Refresh articles."""
+        clear_cache()
         self.query_one("#loading", LoadingIndicator).display = True
         self.load_articles()
     
