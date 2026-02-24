@@ -7,6 +7,7 @@ CONFIG_FILE = Path.home() / ".toadman" / "config.toml"
 DEFAULT_CONFIG = {
     "rss_feeds": {
         "OpenAI": "https://openai.com/blog/rss.xml",
+        "MyClaw Newsletter": "https://newsletter.myclaw.ai/rss/",
     },
     "hacker_news": {
         "keywords": ["agentic", "Claude Code", "Codex", "OpenClaw"],
